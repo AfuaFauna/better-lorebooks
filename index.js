@@ -4,50 +4,72 @@ console.log('--- Afua\'s Better Lorebooks is Loaded ---');
 // ====== IMPORTING ======
 const { eventSource, eventTypes } = SillyTavern.getContext();
 
+// define a unique ID for the injection target, as the block has no ID.
+const TARGET_CONTAINER_CLASS = '.form_create_bottom_buttons_block';
+
 /**
- * Executes the custom logic (printing the console message).
- * This function will be called *before* the core character creation logic.
+ * 1. Checks if the form is in "edit" mode.
+ * 2. If true, creates and injects the button.
  */
-function printPreCreationMessage() {
-    // Check if the form is currently set to 'createcharacter'
-    const isCreating = $('#form_create').attr('actiontype') === 'createcharacter';
+function createAndInjectButton() {
+    const $form = $('#form_create');
+    const actionType = $form.attr('actiontype');
     
-    // We can't check the name length or generation status from here 
-    // without duplicating the core logic, so we trust the core function will validate it.
-    
-    if (isCreating) {
-        // --- YOUR CONSOLE MESSAGE INJECTION POINT ---
-        console.log('[Afua\'s Better Lorebooks] Attempting to create new character. Validation passed.');
-        // ---------------------------------------------
-        
-        // Return true to allow the original event handler (the core logic) to proceed.
-        return true; 
+    // Check: The button should ONLY be added if we are NOT in 'createcharacter' mode.
+    // The presence of a character means actionType is likely 'edit' or undefined/other.
+    if (actionType === 'createcharacter') {
+        // We are creating a NEW character; do not inject the button.
+        console.log('[CustomLogger] Currently in "Create Character" mode. Button injection skipped.');
+        return;
     }
-    // If we're editing, or the check failed, the core logic should handle the rest.
-}
 
-/**
- * Attaches a listener to the create/save button.
- */
-function attachButtonListener() {
-    // Target the actual submit input: <input type="submit" id="create_button">
-    const $createButton = $('#create_button'); 
+    // --- We are in Edit/Save mode, proceed with injection ---
 
-    if ($createButton.length) {
-        // We use .on('click') to attach our function.
-        // It runs immediately when the button is pressed.
-        $createButton.on('click', printPreCreationMessage);
-        
-        console.log('[CharLogger] Attached listener to the Create/Save button.');
-    } else {
-        console.warn('[CharLogger] Create/Save button not found. Will retry.');
+    const $targetContainer = $(TARGET_CONTAINER_CLASS);
+    
+    if (!$targetContainer.length) {
+        console.warn(`[CustomLogger] Target container (${TARGET_CONTAINER_CLASS}) not found. Retrying...`);
         // Retry if the UI is still loading
-        setTimeout(attachButtonListener, 500); 
+        setTimeout(createAndInjectButton, 500);
+        return;
     }
+
+    // A. Create the Button Element using jQuery for simplicity, mimicking existing structure
+    const $newButton = $('<div/>')
+        .attr('id', 'my-custom-logger-button')
+        .attr('title', 'Post Custom Log Message')
+        .addClass('menu_button fa-solid fa-code-branch interactable') // Using a unique icon class
+        .text('Log Message');
+    
+    // B. Attach the Event Listener
+    $newButton.on('click', () => {
+        const context = getContext();
+        const currentCharacter = context.characters[context.characterId];
+        
+        // Log the message based on the character's name
+        let message;
+        if (currentCharacter) {
+            message = `Custom Button Pressed while editing: **${currentCharacter.name}**`;
+        } else {
+            message = "Custom Button Pressed. Character context unavailable.";
+        }
+
+        console.log(`[CustomLogger] ${message}`);
+        
+        if (context.toastr) {
+             context.toastr.info(message, 'Custom Extension Action');
+        }
+    });
+
+    // C. Inject into the DOM (before the delete button, for example)
+    // Find a sibling element for precise placement, e.g., before the Export button.
+    $targetContainer.find('#export_button').before($newButton);
+    
+    console.log('[CustomLogger] Successfully injected custom button for "Edit Character" mode.');
 }
 
-// Wait for the application to be fully loaded before trying to access DOM elements
+// Start the setup process when the application signals it's ready.
 eventSource.on(eventTypes.APP_READY, () => {
-    // Wait a moment after APP_READY to ensure the character form DOM elements are rendered
-    setTimeout(attachButtonListener, 200);
+    // A small delay ensures the form is fully rendered and its actiontype attribute is set.
+    setTimeout(createAndInjectButton, 200);
 });
