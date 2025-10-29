@@ -37,7 +37,6 @@ function createAndInjectButton() {
     // A. Create the Button Element using jQuery for simplicity, mimicking existing structure
     const $newButton = $('<div/>')
         .attr('id', 'my-custom-logger-button')
-        .attr('title', 'Post Custom Log Message')
         .addClass('menu_button fa-solid fa-code-branch interactable') // Using a unique icon class
         .text('Log Message');
     
