@@ -2,6 +2,7 @@
 console.log('--- Afua\'s Better Lorebooks is Loaded ---');
 
 // ====== IMPORTING ======
+// Destructure only eventSource and eventTypes, which are properties of the object returned by getContext()
 const { eventSource, eventTypes } = SillyTavern.getContext();
 
 // define a unique ID for the injection target, as the block has no ID.
@@ -16,7 +17,6 @@ function createAndInjectButton() {
     const actionType = $form.attr('actiontype');
     
     // Check: The button should ONLY be added if we are NOT in 'createcharacter' mode.
-    // The presence of a character means actionType is likely 'edit' or undefined/other.
     if (actionType === 'createcharacter') {
         // We are creating a NEW character; do not inject the button.
         console.log('[CustomLogger] Currently in "Create Character" mode. Button injection skipped.');
@@ -34,14 +34,20 @@ function createAndInjectButton() {
         return;
     }
 
-    // A. Create the Button Element using jQuery for simplicity, mimicking existing structure
+    // A. Create the Button Element using jQuery
     const $newButton = $('<div/>')
         .attr('id', 'my-custom-logger-button')
-        .addClass('menu_button fa-solid fa-code-branch interactable') // Using a unique icon class
+        .attr('title', 'Log Message on Click')
+        .addClass('menu_button fa-solid fa-address-book interactable');
     
     // B. Attach the Event Listener
     $newButton.on('click', () => {
-        const context = getContext();
+        // --- FIX APPLIED HERE ---
+        // Get the context object by calling SillyTavern.getContext() directly
+        const context = SillyTavern.getContext(); 
+        // -------------------------
+
+        // Use safe character access via context
         const currentCharacter = context.characters[context.characterId];
         
         // Log the message based on the character's name
@@ -59,8 +65,8 @@ function createAndInjectButton() {
         }
     });
 
-    // C. Inject into the DOM (before the delete button, for example)
-    // Find a sibling element for precise placement, e.g., before the Export button.
+    // C. Inject into the DOM 
+    // Find a sibling element for precise placement (e.g., before the Export button).
     $targetContainer.find('#export_button').before($newButton);
     
     console.log('[CustomLogger] Successfully injected custom button for "Edit Character" mode.');
