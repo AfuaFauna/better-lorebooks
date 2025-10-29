@@ -38,7 +38,6 @@ function createAndInjectButton() {
     const $newButton = $('<div/>')
         .attr('id', 'my-custom-logger-button')
         .addClass('menu_button fa-solid fa-code-branch interactable') // Using a unique icon class
-        .text('Log Message');
     
     // B. Attach the Event Listener
     $newButton.on('click', () => {
